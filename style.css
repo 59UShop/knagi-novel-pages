@@ -1,0 +1,391 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg-1: #fff9fc;
+  --bg-2: #fffdfd;
+  --bg-3: #fff4f8;
+
+  --card: rgba(255, 255, 255, 0.78);
+  --card-strong: rgba(255, 255, 255, 0.9);
+  --border: rgba(243, 216, 228, 0.95);
+
+  --text: #4f434a;
+  --subtext: #8f7e87;
+  --soft-text: #aa949f;
+
+  --accent-1: #f9d9e6;
+  --accent-2: #f4c3d7;
+  --accent-3: #ecadc8;
+
+  --shadow: 0 18px 40px rgba(193, 154, 174, 0.14);
+  --shadow-soft: 0 8px 20px rgba(193, 154, 174, 0.1);
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  color: var(--text);
+  line-height: 2.05;
+  background:
+    radial-gradient(circle at 10% 8%, rgba(255, 225, 237, 0.95) 0%, transparent 20%),
+    radial-gradient(circle at 88% 12%, rgba(255, 238, 245, 0.95) 0%, transparent 18%),
+    radial-gradient(circle at 78% 72%, rgba(255, 230, 239, 0.55) 0%, transparent 20%),
+    linear-gradient(180deg, var(--bg-1), var(--bg-2) 54%, var(--bg-3));
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: auto;
+  width: 280px;
+  height: 280px;
+  border-radius: 999px;
+  filter: blur(70px);
+  pointer-events: none;
+  opacity: 0.4;
+  z-index: 0;
+}
+
+body::before {
+  top: -60px;
+  left: -80px;
+  background: rgba(255, 219, 233, 0.8);
+}
+
+body::after {
+  right: -80px;
+  bottom: -80px;
+  background: rgba(255, 235, 243, 0.75);
+}
+
+.sakura-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.petal {
+  position: absolute;
+  top: -40px;
+  width: 20px;
+  height: 26px;
+  pointer-events: auto;
+  cursor: pointer;
+  opacity: 0.72;
+  animation-name: sakura-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: 1;
+  transform-origin: center center;
+  will-change: transform, opacity, filter;
+  transition: opacity 0.45s ease, filter 0.45s ease;
+
+  background: linear-gradient(180deg, #fff4f8 0%, #f7bfd2 72%, #f2a9c4 100%);
+  clip-path: polygon(
+    50% 0%,
+    68% 10%,
+    84% 28%,
+    88% 48%,
+    78% 68%,
+    62% 86%,
+    50% 100%,
+    38% 86%,
+    22% 68%,
+    12% 48%,
+    16% 28%,
+    32% 10%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 2px 6px rgba(233, 175, 198, 0.16);
+}
+
+.petal.is-gone {
+  opacity: 0;
+  filter: blur(3px) brightness(1.05);
+  pointer-events: none;
+}
+
+.container {
+  position: relative;
+  z-index: 1;
+  width: min(780px, calc(100% - 32px));
+  margin: 52px auto 76px;
+}
+
+.header {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+  color: #5d4b54;
+  font-size: clamp(2rem, 3.6vw, 2.9rem);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 1.25;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.title::after {
+  content: "";
+  display: block;
+  width: 88px;
+  height: 2px;
+  margin: 14px auto 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, #efbfd3, transparent);
+}
+
+.subtitle {
+  margin: 14px 0 0;
+  font-size: 0.98rem;
+  color: var(--subtext);
+  letter-spacing: 0.02em;
+}
+
+.collection {
+  display: inline-block;
+  margin: 14px 0 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(240, 210, 224, 0.9);
+  font-size: 0.9rem;
+  color: #9c7f8d;
+  box-shadow: 0 6px 14px rgba(216, 181, 197, 0.1);
+  backdrop-filter: blur(4px);
+}
+
+.game-card {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  padding: 32px 30px 26px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+.game-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0) 34%);
+  pointer-events: none;
+}
+
+.game-card::after {
+  content: "";
+  position: absolute;
+  top: -38px;
+  right: -26px;
+  width: 160px;
+  height: 160px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 227, 237, 0.55) 0%, transparent 68%);
+  pointer-events: none;
+}
+
+.game-card.ending {
+  border: 1px solid rgba(236, 173, 200, 0.9);
+  box-shadow:
+    0 18px 40px rgba(193, 154, 174, 0.18),
+    0 0 0 1px rgba(255, 228, 238, 0.6) inset;
+}
+
+.game-card.ending::after {
+  background: radial-gradient(circle, rgba(255, 210, 228, 0.6) 0%, transparent 70%);
+}
+
+.status {
+  display: none;
+}
+
+.unlock-message {
+  margin-bottom: 18px;
+  padding: 13px 15px;
+  border: 1px solid rgba(240, 201, 216, 0.95);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 244, 248, 0.96), rgba(255, 238, 245, 0.92));
+  color: #8a5f72;
+  font-size: 0.95rem;
+  box-shadow: var(--shadow-soft);
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  pointer-events: none;
+}
+
+.unlock-message.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.text {
+  position: relative;
+  white-space: pre-wrap;
+  margin-bottom: 28px;
+  min-height: 320px;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  line-height: 2.15;
+  color: var(--text);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.text.fade-out {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.text.fade-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.choices {
+  display: grid;
+  gap: 12px;
+}
+
+.choice-button {
+  appearance: none;
+  width: 100%;
+  border: 1px solid rgba(239, 197, 214, 0.95);
+  border-radius: 18px;
+  padding: 15px 17px;
+  background:
+    linear-gradient(180deg, rgba(252, 230, 239, 0.98), rgba(248, 211, 225, 0.98));
+  color: #5a4950;
+  font: inherit;
+  line-height: 1.7;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(232, 177, 201, 0.12);
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    background 0.16s ease,
+    border-color 0.16s ease;
+  position: relative;
+}
+
+.choice-button::before {
+  content: "✿";
+  font-size: 0.78rem;
+  color: #c98ba7;
+  margin-right: 8px;
+}
+
+.choice-button:hover {
+  background:
+    linear-gradient(180deg, rgba(250, 218, 231, 1), rgba(245, 200, 219, 1));
+  border-color: rgba(232, 181, 203, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 18px rgba(232, 177, 201, 0.18);
+}
+
+.choice-button:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 10px rgba(232, 177, 201, 0.15);
+}
+
+.choice-button:focus-visible {
+  outline: 2px solid rgba(224, 149, 182, 0.55);
+  outline-offset: 3px;
+}
+
+.end-title {
+  display: inline-block;
+  margin-bottom: 14px;
+  padding: 0 0 6px;
+  font-size: 1.16rem;
+  font-weight: 700;
+  color: #7c5b6a;
+  border-bottom: 1px solid rgba(240, 213, 223, 0.95);
+  letter-spacing: 0.02em;
+}
+
+@keyframes sakura-fall {
+  0% {
+    transform: translate3d(0, -40px, 0) rotate(0deg) scale(1);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 0.72;
+  }
+
+  25% {
+    transform: translate3d(18px, 25vh, 0) rotate(70deg) scale(1);
+  }
+
+  50% {
+    transform: translate3d(-12px, 50vh, 0) rotate(140deg) scale(0.98);
+  }
+
+  75% {
+    transform: translate3d(24px, 78vh, 0) rotate(220deg) scale(1.02);
+  }
+
+  100% {
+    transform: translate3d(-18px, 115vh, 0) rotate(310deg) scale(0.96);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .container {
+    width: min(100% - 20px, 780px);
+    margin: 20px auto 42px;
+  }
+
+  .header {
+    margin-bottom: 18px;
+  }
+
+  .title {
+    font-size: 1.9rem;
+  }
+
+  .subtitle {
+    font-size: 0.94rem;
+  }
+
+  .collection {
+    font-size: 0.85rem;
+  }
+
+  .game-card {
+    border-radius: 22px;
+    padding: 22px 18px 18px;
+  }
+
+  .text {
+    min-height: 240px;
+    font-size: 0.97rem;
+    line-height: 2.05;
+  }
+
+  .choice-button {
+    border-radius: 15px;
+    padding: 13px 14px;
+  }
+}
