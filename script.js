@@ -12,7 +12,8 @@ const state = {
   closeness: 0,
   embarrassment: 0,
   missed: 0,
-  lastChoice: null
+  lastChoice: null,
+  endingRoute: null
 };
 
 let storyData = null;
@@ -37,7 +38,7 @@ async function init() {
     loadProgress();
     updateCollection();
     hideUnlockMessage();
-    renderScene("scene1");
+    renderScene(storyData.startScene || "scene1");
     startSakura();
   } catch (error) {
     textEl.textContent =
@@ -50,7 +51,7 @@ async function init() {
 function updateStatus() {
   if (!statusEl) return;
   statusEl.textContent =
-    `closeness: ${state.closeness} / embarrassment: ${state.embarrassment} / missed: ${state.missed} / lastChoice: ${state.lastChoice ?? "-"}`;
+    `closeness: ${state.closeness} / embarrassment: ${state.embarrassment} / missed: ${state.missed} / lastChoice: ${state.lastChoice ?? "-"} / endingRoute: ${state.endingRoute ?? "-"}`;
 }
 
 function updateCollection() {
@@ -106,12 +107,16 @@ function loadProgress() {
 }
 
 function applyEffects(effects = {}) {
-  state.closeness += effects.closeness || 0;
-  state.embarrassment += effects.embarrassment || 0;
-  state.missed += effects.missed || 0;
+  for (const [key, value] of Object.entries(effects)) {
+    if (typeof value === "number") {
+      if (typeof state[key] !== "number") {
+        state[key] = 0;
+      }
+      state[key] += value;
+      continue;
+    }
 
-  if (effects.lastChoice !== undefined) {
-    state.lastChoice = effects.lastChoice;
+    state[key] = value;
   }
 }
 
@@ -120,49 +125,97 @@ function applyEffects(effects = {}) {
  * - closeness>=1
  * - missed<=2
  * - lastChoice == good
- * - lastChoice === "normal"
+ * - endingRoute == "normal"
+ * - lastChoice != bad
  */
 function parseCondition(condition) {
   if (typeof condition !== "string") return false;
 
-  const match = condition.match(
-    /^([a-zA-Z_][a-zA-Z0-9_]*)\s*(>=|<=|>|<|===|==)\s*(.+)$/
+  const expr = condition.trim();
+
+  const match = expr.match(
+    /^([a-zA-Z_][a-zA-Z0-9_]*)\s*(>=|<=|>|<|===|==|!=|!==)\s*(.+)$/
   );
 
-  if (!match) return false;
+  if (!match) {
+    if (expr in state) {
+      return Boolean(state[expr]);
+    }
+    return false;
+  }
 
   const [, key, operator, rawValue] = match;
   const left = state[key];
+  const right = normalizeValue(rawValue);
 
-  // 右辺を整形
-  const trimmed = rawValue.trim();
+  const bothNumeric =
+    typeof left === "number" &&
+    typeof right === "number" &&
+    !Number.isNaN(left) &&
+    !Number.isNaN(right);
 
-  // "good" / 'good' / good を全部文字列 good として扱う
+  if (bothNumeric) {
+    switch (operator) {
+      case ">=":
+        return left >= right;
+      case "<=":
+        return left <= right;
+      case ">":
+        return left > right;
+      case "<":
+        return left < right;
+      case "==":
+      case "===":
+        return left === right;
+      case "!=":
+      case "!==":
+        return left !== right;
+      default:
+        return false;
+    }
+  }
+
+  switch (operator) {
+    case "==":
+    case "===":
+      return left === right;
+    case "!=":
+    case "!==":
+      return left !== right;
+    case ">=":
+      return String(left) >= String(right);
+    case "<=":
+      return String(left) <= String(right);
+    case ">":
+      return String(left) > String(right);
+    case "<":
+      return String(left) < String(right);
+    default:
+      return false;
+  }
+}
+
+function normalizeValue(rawValue) {
+  const trimmed = String(rawValue).trim();
+
   const isQuoted =
     (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
     (trimmed.startsWith("'") && trimmed.endsWith("'"));
 
-  const right = isQuoted
-    ? trimmed.slice(1, -1)
-    : Number.isNaN(Number(trimmed))
-      ? trimmed
-      : Number(trimmed);
-
-  switch (operator) {
-    case ">=":
-      return Number(left) >= Number(right);
-    case "<=":
-      return Number(left) <= Number(right);
-    case ">":
-      return Number(left) > Number(right);
-    case "<":
-      return Number(left) < Number(right);
-    case "===":
-    case "==":
-      return left === right;
-    default:
-      return false;
+  if (isQuoted) {
+    return trimmed.slice(1, -1);
   }
+
+  if (trimmed === "true") return true;
+  if (trimmed === "false") return false;
+  if (trimmed === "null") return null;
+
+  const numeric = Number(trimmed);
+  if (!Number.isNaN(numeric) && trimmed !== "") {
+    return numeric;
+  }
+
+  return trimmed;
 }
 
 function matchesWhen(when = { all: [] }) {
@@ -193,6 +246,10 @@ function renderChoices(choices) {
   clearChoices();
 
   choices.forEach((choice) => {
+    if (choice.when && !matchesWhen(choice.when)) {
+      return;
+    }
+
     const button = document.createElement("button");
     button.className = "choice-button";
     button.textContent = choice.label;
@@ -209,6 +266,12 @@ function renderChoices(choices) {
 
     choicesEl.appendChild(button);
   });
+
+  if (!choicesEl.childElementCount) {
+    const info = document.createElement("p");
+    info.textContent = "進める選択肢がありません。条件設定を確認してください。";
+    choicesEl.appendChild(info);
+  }
 }
 
 function setTextWithFade(newText, isHTML = false) {
@@ -250,23 +313,23 @@ function renderScene(sceneId) {
 }
 
 function pickEnding() {
-  const allUnlocked = unlocked.ed1 && unlocked.ed2 && unlocked.ed3;
+  const baseUnlocked = unlocked.ed1 && unlocked.ed2 && unlocked.ed3;
 
-  if (
-    allUnlocked &&
-    state.closeness >= 2 &&
-    state.embarrassment >= 2 &&
-    state.missed >= 1
-  ) {
+  // true end:
+  // 1) ED1, ED2, ED3 をすべて回収済み
+  // 2) 今回の最終選択が good
+  // 3) closeness が十分ある
+  if (baseUnlocked && state.endingRoute === "good" && state.closeness >= 3) {
     return storyData.endings.ed4;
   }
 
-  if (state.missed >= 4) {
-    return storyData.endings.ed3;
+  // good / normal / bad は scene3 後半の選択で確定
+  if (state.endingRoute === "good") {
+    return storyData.endings.ed1;
   }
 
-  if (state.closeness >= 4 && state.missed <= 1) {
-    return storyData.endings.ed1;
+  if (state.endingRoute === "bad") {
+    return storyData.endings.ed3;
   }
 
   return storyData.endings.ed2;
@@ -284,9 +347,9 @@ function renderEnding() {
   if (ending === storyData.endings.ed3) unlocked.ed3 = true;
   if (ending === storyData.endings.ed4) unlocked.ed4 = true;
 
-  const allUnlocked = unlocked.ed1 && unlocked.ed2 && unlocked.ed3;
+  const baseUnlocked = unlocked.ed1 && unlocked.ed2 && unlocked.ed3;
 
-  if (allUnlocked && !unlocked.ed4Shown) {
+  if (baseUnlocked && !unlocked.ed4Shown) {
     showUnlockMessage("新しいエンディングが解放されました");
     unlocked.ed4Shown = true;
   } else {
@@ -316,7 +379,8 @@ function restartGame() {
   state.embarrassment = 0;
   state.missed = 0;
   state.lastChoice = null;
-  renderScene("scene1");
+  state.endingRoute = null;
+  renderScene(storyData.startScene || "scene1");
 }
 
 function escapeHtml(text) {
